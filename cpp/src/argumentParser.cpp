@@ -17,15 +17,11 @@ std::string ArgumentParser::getValue(const std::string &key) const
 
 void ArgumentParser::showHelp() const
 {
-  std::cout << "Usage: tersedecompress++ [options] <input_file> [output_file]\n";
-  std::cout << "Options:\n";
-  std::cout << "  -h           Show this help message.\n";
-  std::cout << "  -b           Enable binary mode (no EBCDIC->ASCII conversion).\n";
-  std::cout << "Arguments:\n";
-  std::cout << "  input_file   Path to the input file (required).\n";
-  std::cout << "  output_file  Path to the output file (optional).\n";
-  std::cout << "               In text mode, output_file defaults to <input file>.txt.\n";
-  std::cout << "Version: 5 (C++ port)\n";
+  std::cout << "Usage: tersedecompress++ [<input_file>] [<output_file>]" << std::endl;
+  std::cout << "If <input_file> is omitted or '-', reads from stdin." << std::endl;
+  std::cout << "If <output_file> is omitted or '-', writes to stdout." << std::endl;
+  std::cout << "Always runs in binary mode (no EBCDIC->ASCII conversion)." << std::endl;
+  std::cout << "Version: 5 (C++ port, pipeline mode)" << std::endl;
 }
 
 std::string ArgumentParser::getInputFile() const { return inputFile; }
@@ -41,10 +37,6 @@ void ArgumentParser::parseArguments(int argc, char **argv)
     if (args[i] == "-h")
     {
       flags["-h"] = true;
-    }
-    else if (args[i] == "-b")
-    {
-      flags["-b"] = true;
     }
     else if (inputFile.empty())
     {
@@ -62,15 +54,14 @@ void ArgumentParser::parseArguments(int argc, char **argv)
     }
   }
 
-  if (inputFile.empty() && !hasFlag("-h"))
+  // If inputFile is empty or '-', use stdin
+  if (inputFile.empty() || inputFile == "-")
   {
-    std::cerr << "Error: input_file is required.\n";
-    showHelp();
-    std::exit(1);
+    inputFile = "-";
   }
-  // If we have input but no output and we're in text mode => default output = input + ".txt"
-  if (flags["-b"] == true && outputFile.empty())
+  // If outputFile is empty or '-', use stdout
+  if (outputFile.empty() || outputFile == "-")
   {
-    outputFile = inputFile + ".txt";
+    outputFile = "-";
   }
 }

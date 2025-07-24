@@ -12,35 +12,44 @@ int main(int argc, char *argv[])
 {
   ArgumentParser parser(argc, argv);
 
-  if (parser.hasFlag("-h") || (parser.hasFlag("-b") == true && parser.getOutputFile().empty()))
+  if (parser.hasFlag("-h"))
   {
-    std::cout << "Output filename must be given in binary mode.\n";
     parser.showHelp();
     return 0;
   }
 
-  std::cout << "Input file: " << parser.getInputFile() << "\n";
-  std::cout << "Output file: " << parser.getOutputFile() << "\n";
-  std::cout << "Mode:   " << (parser.hasFlag("-b") ? "Binary" : "Text") << std::endl;
-
-  std::ifstream inStream(parser.getInputFile(), std::ios::binary);
-  if (!inStream.is_open())
-  {
-    std::cerr << "Error: Unable to open input file: " << parser.getInputFile() << "\n";
-    return EXIT_FAILURE;
+  std::istream* inStreamPtr = nullptr;
+  std::ifstream inFile;
+  if (parser.getInputFile() == "-") {
+    inStreamPtr = &std::cin;
+    std::cin.sync_with_stdio(false);
+  } else {
+    inFile.open(parser.getInputFile(), std::ios::binary);
+    if (!inFile.is_open()) {
+      std::cerr << "Error: Unable to open input file: " << parser.getInputFile() << "\n";
+      return EXIT_FAILURE;
+    }
+    inStreamPtr = &inFile;
   }
-  std::ofstream outStream(parser.getOutputFile(), std::ios::binary);
-  if (!outStream.is_open())
-  {
-    std::cerr << "Error: Unable to open output file: " << parser.getOutputFile() << "\n";
-    return EXIT_FAILURE;
+
+  std::ostream* outStreamPtr = nullptr;
+  std::ofstream outFile;
+  if (parser.getOutputFile() == "-") {
+    outStreamPtr = &std::cout;
+    std::cout.sync_with_stdio(false);
+  } else {
+    outFile.open(parser.getOutputFile(), std::ios::binary);
+    if (!outFile.is_open()) {
+      std::cerr << "Error: Unable to open output file: " << parser.getOutputFile() << "\n";
+      return EXIT_FAILURE;
+    }
+    outStreamPtr = &outFile;
   }
 
   try
   {
-    auto decompresser = TerseDecompresser::create(inStream, outStream);
-    decompresser->setTextFlag(parser.hasFlag("-b") == false);
-    std::cout << "Decompressing...\n";
+    auto decompresser = TerseDecompresser::create(*inStreamPtr, *outStreamPtr);
+    decompresser->setTextFlag(false); // Always binary mode
     decompresser->decode();
   }
   catch (const std::exception &ex)
@@ -49,6 +58,5 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  std::cout << "Processing completed.\n";
   return EXIT_SUCCESS;
 }
